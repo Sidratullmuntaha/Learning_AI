@@ -1,0 +1,22 @@
+[Your Name]
+[Your Address]
+[Your Phone Number]
+[Your Email]
+
+[Date]
+
+[Hiring Manager Name] (If known, otherwise use title)
+[Hiring Manager Title]
+[Company Name]
+[Company Address]
+
+**Subject: Application for Junior AI Developer Position - Muhammad Huzaifa Farooqui**
+
+As a dedicated Bachelor of Computer Science student with a profound interest in artificial intelligence, I am writing to express my enthusiastic interest in the Junior AI Developer position at [Company Name]. My academic journey has equipped me with a robust understanding of computer science principles, complemented by a proactive engagement with practical AI applications.
+
+My expertise lies in building and deploying intelligent systems, with strong proficiency in **Python**. I regularly utilize **Pandas** for efficient data manipulation and **Scikit-Learn** for developing and implementing sophisticated **Machine Learning** models. Furthermore, I am skilled in creating dynamic and scalable APIs using **FastAPI** to deploy these models, ensuring seamless integration and accessibility for real-world applications.
+
+I am confident that my foundational skills and fervent dedication to AI development will enable me to make meaningful contributions to your innovative team, and I am eager to learn and grow within your environment. Thank you for your time and consideration; I look forward to discussing how my capabilities align with your vision.
+
+Sincerely,
+Muhammad Huzaifa Farooqui
