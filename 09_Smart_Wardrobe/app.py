@@ -1,79 +1,64 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from typing import List
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./wardrobe.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+class DBClothingItem(Base):
+    __tablename__ = "clothes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    category = Column(String)
+    color = Column(String)
+    formality = Column(String)
+    season = Column(String)
+
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# ==========================================
-# 1. THE SCHEMA (How the AI sees clothes)
-# ==========================================
-class ClothingItem(BaseModel):
-    id: int
+class ClothingItemCreate(BaseModel):
     name: str
-    category: str    # "top", "bottom", "shoes", "outerwear"
+    category: str
     color: str
-    formality: str   # "casual", "smart-casual", "formal"
-    season: str      # "summer", "winter", "all"
+    formality: str
+    season: str
 
-# ==========================================
-# 2. THE DIGITAL WARDROBE (Mock Database)
-# ==========================================
-my_wardrobe = [
-    {"id": 1, "name": "White Cotton T-Shirt", "category": "top", "color": "white", "formality": "casual", "season": "summer"},
-    {"id": 2, "name": "Navy Blue Jeans", "category": "bottom", "color": "blue", "formality": "casual", "season": "all"},
-    {"id": 3, "name": "Charcoal Suit Pants", "category": "bottom", "color": "grey", "formality": "formal", "season": "all"},
-    {"id": 4, "name": "Crisp White Button-Down", "category": "top", "color": "white", "formality": "formal", "season": "all"},
-    {"id": 5, "name": "Black Leather Oxford Shoes", "category": "shoes", "color": "black", "formality": "formal", "season": "all"},
-    {"id": 6, "name": "White Sneakers", "category": "shoes", "color": "white", "formality": "casual", "season": "all"},
-    {"id": 7, "name": "Heavy Wool Peacoat", "category": "outerwear", "color": "navy", "formality": "smart-casual", "season": "winter"}
-]
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# ==========================================
-# 3. THE RULE-BASED ENGINE (The Stylist)
-# ==========================================
-@app.get("/recommend")
-def get_outfit_recommendation(target_formality: str, current_season: str):
-    
-    recommended_outfit = {
-        "top": None,
-        "bottom": None,
-        "shoes": None,
-        "outerwear": None
-    }
-    
-    # Rule 1: Filter the database for items that match the user's needs
-    for item in my_wardrobe:
-        
-        # Only look at clothes that match the event type and weather
-        is_right_event = (item["formality"] == target_formality) or (item["formality"] == "smart-casual")
-        is_right_weather = (item["season"] == current_season) or (item["season"] == "all")
-        
-        if is_right_event and is_right_weather:
-            # Slot the item into the correct part of the outfit
-            if item["category"] == "top" and recommended_outfit["top"] is None:
-                recommended_outfit["top"] = item["name"]
-            
-            elif item["category"] == "bottom" and recommended_outfit["bottom"] is None:
-                recommended_outfit["bottom"] = item["name"]
-                
-            elif item["category"] == "shoes" and recommended_outfit["shoes"] is None:
-                recommended_outfit["shoes"] = item["name"]
-                
-            elif item["category"] == "outerwear" and recommended_outfit["outerwear"] is None:
-                recommended_outfit["outerwear"] = item["name"]
 
-    return {"event_type": target_formality, "weather": current_season, "suggested_outfit": recommended_outfit}
-# ==========================================
-# 4. ADD NEW CLOTHES (User Input)
-# ==========================================
 @app.post("/add_item")
-def add_clothing_item(new_item: ClothingItem):
+def add_clothing_item(item: ClothingItemCreate, db: Session = Depends(get_db)):
     
-    # Convert the user's data into a dictionary and add it to our mock database
-    my_wardrobe.append(new_item.model_dump())
+    new_db_item = DBClothingItem(
+        name=item.name,
+        category=item.category,
+        color=item.color,
+        formality=item.formality,
+        season=item.season
+    )
+  
+    db.add(new_db_item)
+    db.commit()
+    db.refresh(new_db_item)
     
-    return {
-        "message": f"Successfully added {new_item.name} to your wardrobe!", 
-        "total_items": len(my_wardrobe)
-    }
-# To run: uvicorn 09_Smart_Wardrobe.app:app --reload
+    return {"message": f"Successfully added '{new_db_item.name}' to your permanent database!", "item_id": new_db_item.id}
+
+@app.get("/wardrobe")
+def view_all_clothes(db: Session = Depends(get_db)):
+   
+    all_clothes = db.query(DBClothingItem).all()
+    return {"total_items": len(all_clothes), "wardrobe": all_clothes}
